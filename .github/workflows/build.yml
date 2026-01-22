@@ -74,6 +74,11 @@ jobs:
           path: CPP/7zip/Bundles/Format7zF/_o/7z.so
           if-no-files-found: error
 
+      - name: Test macOS binary
+        run: |
+          cd CPP/7zip/Bundles/Alone/_o
+          ./7za --help || ./7za -h
+
   build-linux:
     name: Build on Linux
     runs-on: ubuntu-latest
@@ -125,6 +130,11 @@ jobs:
           name: 7z-so-linux-x86_64
           path: CPP/7zip/Bundles/Format7zF/_o/7z.so
           if-no-files-found: error
+
+      - name: Test Linux binary
+        run: |
+          cd CPP/7zip/Bundles/Alone/_o
+          ./7za --help || ./7za -h
 
   build-windows:
     name: Build on Windows
@@ -208,7 +218,7 @@ jobs:
 
   test-builds:
     name: Test builds
-    runs-on: macos-15-intel
+    runs-on: ubuntu-latest
     needs: [build-macos, build-linux, build-windows]
 
     steps:
@@ -233,28 +243,24 @@ jobs:
           name: 7za-windows-x64
           path: ./build-windows
 
+      - name: Verify Linux binary
+        run: |
+          file build-linux/7za | grep x86-64
+
+      - name: Verify macOS binary
+        run: |
+          file build-macos/7za | grep x86_64
+
       - name: Download test utils
         run: |
           git clone https://github.com/jinfeihan57/p7zip_test_utils.git
 
-      - name: Test macOS binary
-        run: |
-          cd build-macos
-          chmod +x 7za
-          ./7za --help || ./7za -h
-
-      - name: Test Linux binary
-        run: |
-          cd build-linux
-          chmod +x 7za
-          ./7za --help || ./7za -h
-
-      - name: Run 7za tests (macOS)
+      - name: Run 7za tests (Linux)
         run: |
           cd p7zip_test_utils/check
           # Note: Tests may fail for formats disabled in build (e.g., zstd, lzfse)
           # This is expected since makefile.gcc defines ZIP_FLAGS=-DZ7_ZIP_LZFSE_DISABLE
-          bash check_7za.sh ${{ github.workspace }}/build-macos/7za || true
+          bash check_7za.sh ${{ github.workspace }}/build-linux/7za || true
 
   release:
     name: Create Release
