@@ -6,6 +6,28 @@
 
 本仓库: [github.com/tekintian/7zip](https://github.com/tekintian/7zip) | 作者: [dev.tekin.cn](https://dev.tekin.cn)
 
+## 项目简介
+
+7-Zip 是一款高压缩比的开源文件压缩工具，支持多种压缩格式。
+
+本仓库是 [7-Zip 官方仓库](https://github.com/7zip/7zip) 的 Fork 镜像维护版本，在官方源代码基础上提供了跨平台构建支持（Linux/macOS/Windows），并集成了自动化 CI/CD 构建流程，方便用户直接下载使用各平台的预编译二进制文件。
+
+### 主要特性
+
+- **高压缩比**：使用 LZMA2 等先进压缩算法，压缩比优于常见的压缩工具
+- **多格式支持**：支持 7z、ZIP、GZIP、BZIP2、TAR、RAR、ISO 等多种压缩格式
+- **跨平台**：支持 Linux、macOS、Windows 三大操作系统
+- **开源免费**：基于 GNU LGPL 许可证，完全开源免费
+- **安全性高**：支持 AES-256 加密，数据安全有保障
+- **轻量高效**：核心功能轻量化，解压速度快，内存占用低
+
+### 本仓库特点
+
+- **跨平台 CI 构建**：使用 GitHub Actions 自动构建 Linux/macOS/Windows 三平台二进制文件
+- **版本同步**：保持与官方 7-Zip 最新版本同步更新
+- **文档完善**：提供详细的构建说明、技术文档和版本差异对比
+- **易于集成**：提供多种构建产物（7za 轻量版、7zz 完整版、动态库等），方便第三方集成
+
 本仓库包含 7-Zip 25.01 的源代码，支持跨平台构建（Linux/macOS/Windows）。
 
 ## 构建产物说明
