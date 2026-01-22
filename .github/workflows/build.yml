@@ -1,0 +1,248 @@
+name: Build
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    name: Build on macOS
+    runs-on: macos-15-intel
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up build environment
+        run: |
+          echo "Building 7-Zip for macOS x86_64"
+
+      - name: Set deployment target for macOS 10.15
+        run: |
+          echo "MACOSX_DEPLOYMENT_TARGET=10.15" >> $GITHUB_ENV
+
+      - name: Build 7za (console version)
+        run: |
+          export CFLAGS="-target x86_64-apple-macos10.15 -mmacosx-version-min=10.15"
+          export LDFLAGS="-target x86_64-apple-macos10.15 -mmacosx-version-min=10.15"
+          cd CPP/7zip/Bundles/Alone
+          make -f makefile.gcc
+
+      - name: Install 7za
+        run: |
+          mkdir -p mac-p7zip/bin mac-p7zip/lib
+          export PROJECT_ROOT=`pwd`
+          cd CPP/7zip/Bundles/Alone
+          INSTALL_PREFIX=$PROJECT_ROOT/mac-p7zip make -f makefile.gcc install
+
+      - name: Upload artifact (7za)
+        uses: actions/upload-artifact@v4
+        with:
+          name: 7za-macos-x86_64
+          path: mac-p7zip/bin/7za
+          if-no-files-found: error
+
+      - name: Verify binary architecture
+        run: |
+          file mac-p7zip/bin/7za | grep x86_64
+
+      - name: Verify minimum macOS version
+        run: |
+          otool -l mac-p7zip/bin/7za | grep -A 3 LC_VERSION_MIN_MACOSX || otool -l mac-p7zip/bin/7za | grep -A 3 LC_BUILD_VERSION || true
+
+      - name: Build 7zz (full version)
+        run: |
+          export CFLAGS="-target x86_64-apple-macos10.15 -mmacosx-version-min=10.15"
+          export LDFLAGS="-target x86_64-apple-macos10.15 -mmacosx-version-min=10.15"
+          export PROJECT_ROOT=`pwd`
+          cd CPP/7zip/Bundles/Alone2
+          make -f makefile.gcc
+          INSTALL_PREFIX=$PROJECT_ROOT/mac-p7zip make -f makefile.gcc install
+
+      - name: Upload artifact (7zz)
+        uses: actions/upload-artifact@v4
+        with:
+          name: 7zz-macos-x86_64
+          path: mac-p7zip/bin/7zz
+          if-no-files-found: error
+
+      - name: Build 7z.so (dynamic library)
+        run: |
+          export CFLAGS="-target x86_64-apple-macos10.15 -mmacosx-version-min=10.15"
+          export LDFLAGS="-target x86_64-apple-macos10.15 -mmacosx-version-min=10.15"
+          export PROJECT_ROOT=`pwd`
+          cd CPP/7zip/Bundles/Format7zF
+          make -f makefile.gcc
+          INSTALL_PREFIX=$PROJECT_ROOT/mac-p7zip make -f makefile.gcc install
+
+      - name: Upload artifact (7z.so)
+        uses: actions/upload-artifact@v4
+        with:
+          name: 7z-so-macos-x86_64
+          path: mac-p7zip/lib/7z.so
+          if-no-files-found: error
+
+  build-windows:
+    name: Build on Windows
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up MSVC environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Build 7za.exe (console version)
+        working-directory: ./CPP/7zip/Bundles/Alone
+        run: |
+          nmake -f makefile PLATFORM=x64
+
+      - name: Upload artifact (7za.exe)
+        uses: actions/upload-artifact@v4
+        with:
+          name: 7za-windows-x64
+          path: CPP/7zip/Bundles/Alone/o/7za.exe
+          if-no-files-found: error
+
+      - name: Build 7zr.exe (reduced version)
+        working-directory: ./CPP/7zip/Bundles/Alone7z
+        run: |
+          nmake -f makefile PLATFORM=x64
+
+      - name: Upload artifact (7zr.exe)
+        uses: actions/upload-artifact@v4
+        with:
+          name: 7zr-windows-x64
+          path: CPP/7zip/Bundles/Alone7z/o/7zr.exe
+          if-no-files-found: error
+
+  build-c-libraries:
+    name: Build C libraries on macOS
+    runs-on: macos-15-intel
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set deployment target for macOS 10.15
+        run: |
+          echo "MACOSX_DEPLOYMENT_TARGET=10.15" >> $GITHUB_ENV
+
+      - name: Build 7z decoder library
+        run: |
+          export CFLAGS="-target x86_64-apple-macos10.15 -mmacosx-version-min=10.15"
+          export LDFLAGS="-target x86_64-apple-macos10.15 -mmacosx-version-min=10.15"
+          cd C/Util/7z
+          make -f makefile.gcc
+
+      - name: Upload artifact (7zdec)
+        uses: actions/upload-artifact@v4
+        with:
+          name: 7zdec-macos-x86_64
+          path: C/Util/7z/_o/7zdec
+          if-no-files-found: error
+
+      - name: Build LZMA library
+        run: |
+          export CFLAGS="-target x86_64-apple-macos10.15 -mmacosx-version-min=10.15"
+          export LDFLAGS="-target x86_64-apple-macos10.15 -mmacosx-version-min=10.15"
+          cd C/Util/LzmaLib
+          make -f makefile.gcc
+
+      - name: Upload artifact (lzma library)
+        uses: actions/upload-artifact@v4
+        with:
+          name: lzma-lib-macos-x86_64
+          path: C/Util/LzmaLib/_o/liblzma.a
+          if-no-files-found: error
+
+      - name: Verify library architecture
+        run: |
+          file C/Util/LzmaLib/_o/liblzma.a | grep x86_64
+
+  test-builds:
+    name: Test builds
+    runs-on: macos-15-intel
+    needs: [build-macos, build-windows]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: 7za-macos-x86_64
+          path: ./build-macos
+
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: 7za-windows-x64
+          path: ./build-windows
+
+      - name: Download test utils
+        run: |
+          git clone https://github.com/jinfeihan57/p7zip_test_utils.git
+
+      - name: Test macOS binary
+        run: |
+          cd build-macos
+          chmod +x 7za
+          ./7za --help || ./7za -h
+
+      - name: Run 7za tests (macOS)
+        run: |
+          cd p7zip_test_utils/check
+          bash check_7za.sh ${{ github.workspace }}/build-macos/7za
+
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: [build-macos, build-windows, build-c-libraries]
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Create release archives
+        run: |
+          mkdir -p release
+
+          # macOS binaries
+          cd artifacts
+          for dir in 7za-macos-* 7zz-macos-* 7z-so-macos-* 7zdec-macos-* lzma-lib-macos-*; do
+            if [ -d "$dir" ]; then
+              tar -czf "../release/${dir}.tar.gz" "$dir"
+            fi
+          done
+
+          # Windows binaries
+          for dir in 7za-windows-* 7zr-windows-*; do
+            if [ -d "$dir" ]; then
+              cd "$dir"
+              zip -r "../../release/${dir}.zip" *
+              cd ..
+            fi
+          done
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
