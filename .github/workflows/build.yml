@@ -31,58 +31,47 @@ jobs:
           cd CPP/7zip/Bundles/Alone
           make -f makefile.gcc
 
-      - name: Install 7za
-        run: |
-          mkdir -p mac-p7zip/bin mac-p7zip/lib
-          export PROJECT_ROOT=`pwd`
-          cd CPP/7zip/Bundles/Alone
-          INSTALL_PREFIX=$PROJECT_ROOT/mac-p7zip make -f makefile.gcc install
-
       - name: Upload artifact (7za)
         uses: actions/upload-artifact@v4
         with:
           name: 7za-macos-x86_64
-          path: mac-p7zip/bin/7za
+          path: CPP/7zip/Bundles/Alone/_o/7za
           if-no-files-found: error
 
       - name: Verify binary architecture
         run: |
-          file mac-p7zip/bin/7za | grep x86_64
+          file CPP/7zip/Bundles/Alone/_o/7za | grep x86_64
 
       - name: Verify minimum macOS version
         run: |
-          otool -l mac-p7zip/bin/7za | grep -A 3 LC_VERSION_MIN_MACOSX || otool -l mac-p7zip/bin/7za | grep -A 3 LC_BUILD_VERSION || true
+          otool -l CPP/7zip/Bundles/Alone/_o/7za | grep -A 3 LC_VERSION_MIN_MACOSX || otool -l CPP/7zip/Bundles/Alone/_o/7za | grep -A 3 LC_BUILD_VERSION || true
 
       - name: Build 7zz (full version)
         run: |
           export CFLAGS="-target x86_64-apple-macos10.15 -mmacosx-version-min=10.15"
           export LDFLAGS="-target x86_64-apple-macos10.15 -mmacosx-version-min=10.15"
-          export PROJECT_ROOT=`pwd`
           cd CPP/7zip/Bundles/Alone2
           make -f makefile.gcc
-          INSTALL_PREFIX=$PROJECT_ROOT/mac-p7zip make -f makefile.gcc install
 
       - name: Upload artifact (7zz)
         uses: actions/upload-artifact@v4
         with:
           name: 7zz-macos-x86_64
-          path: mac-p7zip/bin/7zz
+          path: CPP/7zip/Bundles/Alone2/_o/7zz
           if-no-files-found: error
 
       - name: Build 7z.so (dynamic library)
         run: |
           export CFLAGS="-target x86_64-apple-macos10.15 -mmacosx-version-min=10.15"
           export LDFLAGS="-target x86_64-apple-macos10.15 -mmacosx-version-min=10.15"
-          export PROJECT_ROOT=`pwd`
           cd CPP/7zip/Bundles/Format7zF
           make -f makefile.gcc
-          INSTALL_PREFIX=$PROJECT_ROOT/mac-p7zip make -f makefile.gcc install
 
       - name: Upload artifact (7z.so)
         uses: actions/upload-artifact@v4
         with:
           name: 7z-so-macos-x86_64
-          path: mac-p7zip/lib/7z.so
+          path: CPP/7zip/Bundles/Format7zF/_o/7z.so
           if-no-files-found: error
 
   build-windows:
@@ -107,7 +96,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: 7za-windows-x64
-          path: CPP/7zip/Bundles/Alone/o/7za.exe
+          path: CPP/7zip/Bundles/Alone/x64/7za.exe
           if-no-files-found: error
 
       - name: Build 7zr.exe (reduced version)
@@ -119,7 +108,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: 7zr-windows-x64
-          path: CPP/7zip/Bundles/Alone7z/o/7zr.exe
+          path: CPP/7zip/Bundles/Alone7z/x64/7zr.exe
           if-no-files-found: error
 
   build-c-libraries:
@@ -153,18 +142,18 @@ jobs:
           export CFLAGS="-target x86_64-apple-macos10.15 -mmacosx-version-min=10.15"
           export LDFLAGS="-target x86_64-apple-macos10.15 -mmacosx-version-min=10.15"
           cd C/Util/LzmaLib
-          make -f makefile.gcc
+          make
 
       - name: Upload artifact (lzma library)
         uses: actions/upload-artifact@v4
         with:
           name: lzma-lib-macos-x86_64
-          path: C/Util/LzmaLib/_o/liblzma.a
+          path: C/Util/LzmaLib/o/liblzma.a
           if-no-files-found: error
 
       - name: Verify library architecture
         run: |
-          file C/Util/LzmaLib/_o/liblzma.a | grep x86_64
+          file C/Util/LzmaLib/o/liblzma.a | grep x86_64
 
   test-builds:
     name: Test builds
