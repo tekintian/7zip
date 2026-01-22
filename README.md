@@ -2,7 +2,27 @@
 
 7-Zip website: [7-zip.org](https://7-zip.org)
 
+**版本**: 25.01 (2025-08-03)
+
+本仓库: [github.com/tekintian/7zip](https://github.com/tekintian/7zip) | 作者: [dev.tekin.cn](https://dev.tekin.cn)
+
+本仓库包含 7-Zip 25.01 的源代码，支持跨平台构建（Linux/macOS/Windows）。
+
 ## 构建产物说明
+
+### Linux (x86_64)
+
+| 产物 | 说明 | 支持的格式 | 构建路径 |
+|------|------|-----------|---------|
+| `7za` | 控制台版本 (轻量级) | 7z, xz, cab, zip, gzip, bzip2, tar | `CPP/7zip/Bundles/Alone/_o/7za` |
+| `7zz` | 控制台版本 (完整版) | **所有格式** (包括 ZSTD, LZFSE, RAR 等) | `CPP/7zip/Bundles/Alone2/_o/7zz` |
+| `7z.so` | 动态库 (7z 格式) | 7z (解压/压缩) | `CPP/7zip/Bundles/Format7zF/_o/7z.so` |
+| `7zdec` | C 语言解码器 | 7z (仅解压, LZMA/Copy 方法) | `C/Util/7z/_o/7zdec` |
+
+**注意**：
+- `7za` 禁用了 ZSTD 和 LZFSE 格式支持（通过 `ZIP_FLAGS=-DZ7_ZIP_LZFSE_DISABLE` 编译标志）
+- `7zz` 支持所有格式，包括 ZSTD 和 LZFSE
+- 输出目录：`_o/`
 
 ### macOS (x86_64)
 
@@ -118,7 +138,8 @@ nmake -f makefile PLATFORM=x64
 
 | 平台 | Makefile | 构建工具 | 输出目录 |
 |------|----------|---------|---------|
-| macOS/Linux | `makefile.gcc` | GNU make | `_o/` |
+| Linux | `makefile.gcc` | GNU make | `_o/` |
+| macOS | `makefile.gcc` | GNU make | `_o/` |
 | Windows | `makefile` | NMake | `x64/` (由 PLATFORM 决定) |
 
 ### 已知限制

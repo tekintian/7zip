@@ -74,6 +74,58 @@ jobs:
           path: CPP/7zip/Bundles/Format7zF/_o/7z.so
           if-no-files-found: error
 
+  build-linux:
+    name: Build on Linux
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up build environment
+        run: |
+          echo "Building 7-Zip for Linux x86_64"
+
+      - name: Build 7za (console version)
+        run: |
+          cd CPP/7zip/Bundles/Alone
+          make -f makefile.gcc
+
+      - name: Upload artifact (7za)
+        uses: actions/upload-artifact@v4
+        with:
+          name: 7za-linux-x86_64
+          path: CPP/7zip/Bundles/Alone/_o/7za
+          if-no-files-found: error
+
+      - name: Verify binary architecture
+        run: |
+          file CPP/7zip/Bundles/Alone/_o/7za | grep x86-64
+
+      - name: Build 7zz (full version)
+        run: |
+          cd CPP/7zip/Bundles/Alone2
+          make -f makefile.gcc
+
+      - name: Upload artifact (7zz)
+        uses: actions/upload-artifact@v4
+        with:
+          name: 7zz-linux-x86_64
+          path: CPP/7zip/Bundles/Alone2/_o/7zz
+          if-no-files-found: error
+
+      - name: Build 7z.so (dynamic library)
+        run: |
+          cd CPP/7zip/Bundles/Format7zF
+          make -f makefile.gcc
+
+      - name: Upload artifact (7z.so)
+        uses: actions/upload-artifact@v4
+        with:
+          name: 7z-so-linux-x86_64
+          path: CPP/7zip/Bundles/Format7zF/_o/7z.so
+          if-no-files-found: error
+
   build-windows:
     name: Build on Windows
     runs-on: windows-latest
@@ -112,28 +164,42 @@ jobs:
           if-no-files-found: error
 
   build-c-libraries:
-    name: Build C libraries on macOS
-    runs-on: macos-15-intel
+    name: Build C libraries
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        os: [macos-15-intel, ubuntu-latest]
+        include:
+          - os: macos-15-intel
+            platform: macos-x86_64
+            cflags: "-target x86_64-apple-macos10.15 -mmacosx-version-min=10.15"
+            ldflags: "-target x86_64-apple-macos10.15 -mmacosx-version-min=10.15"
+          - os: ubuntu-latest
+            platform: linux-x86_64
+            cflags: ""
+            ldflags: ""
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set deployment target for macOS 10.15
+      - name: Set deployment target (macOS)
+        if: matrix.os == 'macos-15-intel'
         run: |
           echo "MACOSX_DEPLOYMENT_TARGET=10.15" >> $GITHUB_ENV
 
       - name: Build 7z decoder library
         run: |
-          export CFLAGS="-target x86_64-apple-macos10.15 -mmacosx-version-min=10.15"
-          export LDFLAGS="-target x86_64-apple-macos10.15 -mmacosx-version-min=10.15"
+          export CFLAGS="${{ matrix.cflags }}"
+          export LDFLAGS="${{ matrix.ldflags }}"
           cd C/Util/7z
           make -f makefile.gcc
 
       - name: Upload artifact (7zdec)
         uses: actions/upload-artifact@v4
         with:
-          name: 7zdec-macos-x86_64
+          name: 7zdec-${{ matrix.platform }}
           path: C/Util/7z/_o/7zdec
           if-no-files-found: error
 
@@ -143,7 +209,7 @@ jobs:
   test-builds:
     name: Test builds
     runs-on: macos-15-intel
-    needs: [build-macos, build-windows]
+    needs: [build-macos, build-linux, build-windows]
 
     steps:
       - name: Checkout code
@@ -154,6 +220,12 @@ jobs:
         with:
           name: 7za-macos-x86_64
           path: ./build-macos
+
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: 7za-linux-x86_64
+          path: ./build-linux
 
       - name: Download Windows artifact
         uses: actions/download-artifact@v4
@@ -171,6 +243,12 @@ jobs:
           chmod +x 7za
           ./7za --help || ./7za -h
 
+      - name: Test Linux binary
+        run: |
+          cd build-linux
+          chmod +x 7za
+          ./7za --help || ./7za -h
+
       - name: Run 7za tests (macOS)
         run: |
           cd p7zip_test_utils/check
@@ -181,7 +259,7 @@ jobs:
   release:
     name: Create Release
     runs-on: ubuntu-latest
-    needs: [build-macos, build-windows]
+    needs: [build-macos, build-linux, build-windows]
     if: startsWith(github.ref, 'refs/tags/v')
 
     steps:
@@ -199,7 +277,14 @@ jobs:
 
           # macOS binaries
           cd artifacts
-          for dir in 7za-macos-* 7zz-macos-* 7z-so-macos-* 7zdec-macos-*; do
+          for dir in 7za-macos-* 7zz-macos-* 7z-so-macos-*; do
+            if [ -d "$dir" ]; then
+              tar -czf "../release/${dir}.tar.gz" "$dir"
+            fi
+          done
+
+          # Linux binaries
+          for dir in 7za-linux-* 7zz-linux-* 7z-so-linux-*; do
             if [ -d "$dir" ]; then
               tar -czf "../release/${dir}.tar.gz" "$dir"
             fi

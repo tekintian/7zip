@@ -126,7 +126,10 @@ DECLARE_AND_SET_CLIENT_VERSION_VAR
 static const char * const kCopyrightString = "\n7-Zip"
   PROG_POSTFIX_2
   " " MY_VERSION_CPU
-  " : " MY_COPYRIGHT_DATE "\n";
+  " : " MY_COPYRIGHT_DATE "\n"
+  "\n"
+  "Repository: https://github.com/tekintian/7zip\n"
+  "Author: https://dev.tekin.cn\n";
 
 static const char * const kHelpString =
     "Usage: 7z"
